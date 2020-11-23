@@ -10,7 +10,7 @@
 # A Random Player is provided for you
 # 
 #
-
+import random
 from pa2_gomoku import Player
 
 
@@ -28,6 +28,13 @@ class AIPlayer(Player):
             return: row, col are the coordinated of a vacant location on the board 
         """
         self.num_moves += 1
+        open_pos = []
+        for row in range(board.height):
+            for col in range(board.width):
+                if board.can_add_to(row, col):
+                    open_pos.append((row, col))
+        
+        return random.choice(open_pos)
         
         
         ################### TODO: ######################################

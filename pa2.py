@@ -56,7 +56,6 @@ class AIPlayer(Player):
 	def get_next_open_row(self, board, row, col):
 		for r in range(self.ROW_COUNT):
 			entry = board.slots[r][col]
-			# print('entry', entry)
 			if not is_not_blank(entry):
 				return r
 
@@ -79,35 +78,17 @@ class AIPlayer(Player):
 		if window.count(opponent_piece) == 4 and window.count(EMPTY) == 1:
 			score -= 8
 		elif window.count(opponent_piece) == 3 and window.count(EMPTY) == 2:
-			score -= 4
-		# print('score', score)
+			score -= 6
 		return score
 
 	def score_position(self, temp_board, piece):
 		score = 0
 
-		# Score center column
-		# center_array = [int(i) for i in list(temp_board[:, self.COLUMN_COUNT//2])]
-		# center_array = temp_board[self.COLUMN_COUNT//2]
-		# # print('center_array')
-		# # print(center_array)
-		# center_count = center_array.count(piece)
-		# # print('center_count', center_count)
-		# score += center_count * 3
-
 		# Score Horizontal
 		for row in range(self.ROW_COUNT):
 			row_array = temp_board[row]
-			# row_array = [int(i) for i in list(temp_board[row,:])]
 			for column in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
-				# if self.COLUMN_COUNT - column >= WINDOW_LENGTH:
-				# 	window = row_array[column: column + WINDOW_LENGTH]
-				# else:
-				# 	print('reverse')
-				# 	# window = row_array[-WINDOW_LENGTH :]
-				# 	window = row_array[-WINDOW_LENGTH :]
 				window = row_array[column: column + WINDOW_LENGTH]
-				# print('window', window)
 				score += self.evaluate_window(window, piece)
 		# # Score Vertical
 		for column in range(self.COLUMN_COUNT):
@@ -119,7 +100,7 @@ class AIPlayer(Player):
 				window = col_array[row: row + WINDOW_LENGTH]
 				score += self.evaluate_window(window, piece)
 
-		# # Score posiive sloped diagonal
+		# Score positive sloped diagonal
 		for r in range(self.ROW_COUNT - WINDOW_LENGTH + 1):
 			for c in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
 				window = [temp_board[r + i][ c + i ] for i in range(WINDOW_LENGTH)]
@@ -127,16 +108,13 @@ class AIPlayer(Player):
 				score += self.evaluate_window(window, piece)
 
 
+		# negative positive sloped diagonal
 		for r in range(self.ROW_COUNT - WINDOW_LENGTH + 1):
 			for c in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
 				window = [temp_board[r + WINDOW_LENGTH - 1 - i][c + i] for i in range(WINDOW_LENGTH)]
 				score += self.evaluate_window(window, piece)
 
 		return score;
-
-
-	# def generate_matrix(original_list):
-	# 	return [list(ele) for ele in test_list]
 
 	def pick_best_move(self, board, piece):
 		valid_locations = self.get_valid_locations(board.slots)
@@ -145,18 +123,11 @@ class AIPlayer(Player):
 		for location in valid_locations:
 			row = location[0]
 			column = location[1]
-			# next_row = self.get_next_open_row(board, row, column)
-			# print('row, column', row, column)
-			# print('next_row, column', next_row, column)
 			temp_slots = copy.deepcopy(board.slots)
 			self.drop_piece(temp_slots, row, column, piece)
 			score = self.score_position(temp_slots, piece)
-			print('score', score)
-			print('best_score', best_score)
 			if score > best_score:
 				best_score = score
-				# best_move = (row, column)
-				# print('best move', next_row, column)
 				best_move = (row, column)
 
 
@@ -173,15 +144,10 @@ class AIPlayer(Player):
 		self.num_moves += 1
 		self.ROW_COUNT = board.height
 		self.COLUMN_COUNT = board.width
-		# open_pos = []
-		# for row in range(board.height):
-		# 	for col in range(board.width):
-		# 		if board.can_add_to(row, col):
-		# 			open_pos.append((row, col))
-		
-		# return random.choice(open_pos)
-		# next_move = self.pick_best_move(board, self.checker)
-		next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
+		if(len(self.get_valid_locations(board.slots)) > 10):
+			next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
+		else:
+			next_move, minimax_score = self.minimax(board.slots, 3, -math.inf, math.inf, True)
 
 		print('next_move', next_move)
 
@@ -196,29 +162,24 @@ class AIPlayer(Player):
 		
 	def is_terminal_node(self, board, valid_locations):
 		# return heuristic value of node if it's a terminal node
-		
-		# return self.winning_move(board, self.checker) or self.winning_move(board, self.opponent_checker) or len(self.get_valid_locations(board)) == 0
-		# return self.winning_move(board, self.checker) or self.winning_move(board, self.opponent_checker) or self.valid_locations_exist(board) == 0
 		return self.winning_move(board, self.checker, valid_locations) or self.winning_move(board, self.opponent_checker, valid_locations) or len(valid_locations) == 0
 
 	def minimax(self, board, depth, alpha, beta, maximizingPlayer):
-		## else recursively check tree for best score
 
 		valid_locations = self.get_valid_locations(board)
-		# print('valid_locations \n',valid_locations)
 		is_terminal = self.is_terminal_node(board, valid_locations)
-		# print('is_terminal', is_terminal)
 		if depth == 0 or is_terminal:
 			if is_terminal:
-				if self.winning_move(board, self.opponent_checker):
+				if self.winning_move(board, self.opponent_checker, valid_locations):
 					return (valid_locations[0], 100000000000000)
-				elif self.winning_move(board, self.checker):
+				elif self.winning_move(board, self.checker, valid_locations):
 					return (valid_locations[0], -10000000000000)
 				else: # Game is over, no more valid moves
 					return (valid_locations[0], 0)
 			else: # Depth is zero
 				# if depth is zero, find the heuristic value of the board
 				return (valid_locations[0], self.score_position(board, self.opponent_checker))
+		#else recursively check tree for best score
 		if maximizingPlayer:
 			value = -math.inf
 			best_move = random.choice(valid_locations)
@@ -277,7 +238,6 @@ class AIPlayer(Player):
 			# contain the specified checker.
 			if c+i < self.COLUMN_COUNT and board[r][c+i] == checker:
 				cnt += 1
-				# print('Hl: ' + str(cnt))
 			else:
 				break
 		
@@ -288,7 +248,6 @@ class AIPlayer(Player):
 			for i in range(1, 6-cnt):
 				if c-i >= 0 and board[r][c-i] == checker:
 					cnt += 1
-					# print('Hr: ' + str(cnt))
 				else:
 					break
 			   
@@ -304,7 +263,6 @@ class AIPlayer(Player):
 			# contain the specified checker.            
 			if r+i < self.COLUMN_COUNT and board[r+i][c] == checker:
 				cnt += 1
-				# print('Vdwn: ' + str(cnt))
 			else:
 				break
 		
@@ -315,7 +273,6 @@ class AIPlayer(Player):
 			for i in range(1, 6-cnt):
 				if r-i >= 0 and board[r-i][c] == checker:
 					cnt += 1
-					# print('Vup: ' + str(cnt))
 				else:
 					break
 			
@@ -330,7 +287,6 @@ class AIPlayer(Player):
 			if r+i < self.ROW_COUNT and c+i < self.COLUMN_COUNT and \
 				board[r+i][c+i] == checker:                    
 				cnt += 1
-				# print('D1: L ' + str(cnt))
 			else:
 				break
 		if cnt == 5:
@@ -340,7 +296,6 @@ class AIPlayer(Player):
 				if r-i >= 0 and c-i >= 0 and \
 					board[r-i][c-i] == checker:
 						cnt += 1
-						# print('D1: R ' + str(cnt))
 				else:
 					break
 				
@@ -355,7 +310,6 @@ class AIPlayer(Player):
 			if r-i >= 0 and c+i < self.COLUMN_COUNT and \
 				board[r-i][c+i] == checker:
 				cnt += 1
-				# print('D2: L ' + str(cnt))
 			else:
 				break
 			
@@ -366,7 +320,6 @@ class AIPlayer(Player):
 				if r+i < self.ROW_COUNT and c-i >= 0 and \
 					board[r+i][c-i] == checker:
 					cnt += 1
-					# print('D2: R ' + str(cnt))
 				else:
 					break
 				

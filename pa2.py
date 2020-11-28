@@ -35,6 +35,32 @@ class AIPlayer(Player):
 		else:
 			self.opponent_checker = 'X'
 
+	def next_move(self, board):
+		""" returns the called AIPlayer's next move for a game on
+			the specified Board object. 
+			input: board is a Board object for the game that the called
+					 Player is playing.
+			return: row, col are the coordinated of a vacant location on the board 
+		"""
+		self.num_moves += 1
+		self.ROW_COUNT = board.height
+		self.COLUMN_COUNT = board.width
+		if(len(self.get_valid_locations(board.slots)) > 10):
+			next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
+		else:
+			next_move, minimax_score = self.minimax(board.slots, 3, -math.inf, math.inf, True)
+
+		print('next_move', next_move)
+
+		return next_move
+		
+		
+		################### TODO: ######################################
+		# Implement your strategy here. 
+		# Feel free to call as many as helper functions as you want.
+		# We only cares the return of this function
+		################################################################
+		
 	def drop_piece(self, temp_slots, row, col, piece):
 		temp_slots[row][col] = piece
 	
@@ -133,33 +159,6 @@ class AIPlayer(Player):
 
 		return best_move;
 
-
-	def next_move(self, board):
-		""" returns the called AIPlayer's next move for a game on
-			the specified Board object. 
-			input: board is a Board object for the game that the called
-					 Player is playing.
-			return: row, col are the coordinated of a vacant location on the board 
-		"""
-		self.num_moves += 1
-		self.ROW_COUNT = board.height
-		self.COLUMN_COUNT = board.width
-		if(len(self.get_valid_locations(board.slots)) > 10):
-			next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
-		else:
-			next_move, minimax_score = self.minimax(board.slots, 3, -math.inf, math.inf, True)
-
-		print('next_move', next_move)
-
-		return next_move
-		
-		
-		################### TODO: ######################################
-		# Implement your strategy here. 
-		# Feel free to call as many as helper functions as you want.
-		# We only cares the return of this function
-		################################################################
-		
 	def is_terminal_node(self, board, valid_locations):
 		# return heuristic value of node if it's a terminal node
 		return self.winning_move(board, self.checker, valid_locations) or self.winning_move(board, self.opponent_checker, valid_locations) or len(valid_locations) == 0

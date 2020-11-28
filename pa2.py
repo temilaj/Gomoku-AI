@@ -19,7 +19,7 @@ WINDOW_LENGTH = 5
 EMPTY = ' '
 
 def is_not_blank(s):
-    return bool(s and s.strip())
+	return bool(s and s.strip())
 
 class AIPlayer(Player):
 	""" a subclass of Player that looks ahead some number of moves and 
@@ -37,12 +37,12 @@ class AIPlayer(Player):
 
 	def drop_piece(self, temp_slots, row, col, piece):
 		temp_slots[row][col] = piece
-
+	
 	def get_valid_locations(self, board):
 		valid_locations = []
 		for row in range(self.ROW_COUNT):
 			for col in range(self.COLUMN_COUNT):
-				if board.can_add_to(row, col):
+				if board[row][col] == EMPTY:
 					valid_locations.append((row, col))
 		return valid_locations
 	
@@ -65,29 +65,21 @@ class AIPlayer(Player):
 		opponent_piece = self.checker
 		if piece == self.checker:
 			opponent_piece = self.opponent_checker
-		# print('window', window)
 		if window.count(piece) == 5:
-			print('count 5')
 			score += 100
 		elif window.count(piece) == 4 and window.count(EMPTY) == 1:
-			# print('count 4')
 			score += 10
 		elif window.count(piece) == 3 and window.count(EMPTY) == 2:
-			# print('count 3')
 			score += 5
 		elif window.count(piece) == 2 and window.count(EMPTY) == 3:
-			# print('count 2')
 			score += 2
 		elif window.count(piece) == 1 and window.count(EMPTY) == 4:
-			# print('count 1')
 			score += 1
 
 		if window.count(opponent_piece) == 4 and window.count(EMPTY) == 1:
-			# print(window)
-			print(' ====== = fa-ol ----')
-			score -= 800
+			score -= 8
 		elif window.count(opponent_piece) == 3 and window.count(EMPTY) == 2:
-			score -= 2
+			score -= 4
 		# print('score', score)
 		return score
 
@@ -128,14 +120,14 @@ class AIPlayer(Player):
 				score += self.evaluate_window(window, piece)
 
 		# # Score posiive sloped diagonal
-		for r in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
+		for r in range(self.ROW_COUNT - WINDOW_LENGTH + 1):
 			for c in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
 				window = [temp_board[r + i][ c + i ] for i in range(WINDOW_LENGTH)]
 				# print('window', window)
 				score += self.evaluate_window(window, piece)
 
 
-		for r in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
+		for r in range(self.ROW_COUNT - WINDOW_LENGTH + 1):
 			for c in range(self.COLUMN_COUNT - WINDOW_LENGTH + 1):
 				window = [temp_board[r + WINDOW_LENGTH - 1 - i][c + i] for i in range(WINDOW_LENGTH)]
 				score += self.evaluate_window(window, piece)
@@ -147,7 +139,7 @@ class AIPlayer(Player):
 	# 	return [list(ele) for ele in test_list]
 
 	def pick_best_move(self, board, piece):
-		valid_locations = self.get_valid_locations(board)
+		valid_locations = self.get_valid_locations(board.slots)
 		best_score = -10000
 		best_move = random.choice(valid_locations)
 		for location in valid_locations:
@@ -188,8 +180,8 @@ class AIPlayer(Player):
 		# 			open_pos.append((row, col))
 		
 		# return random.choice(open_pos)
-		next_move = self.pick_best_move(board, self.checker)
-		# next_move, minimax_score = self.minimax(board, 5, -math.inf, math.inf, True)
+		# next_move = self.pick_best_move(board, self.checker)
+		next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
 
 		print('next_move', next_move)
 
@@ -202,54 +194,183 @@ class AIPlayer(Player):
 		# We only cares the return of this function
 		################################################################
 		
-	def is_terminal_node(self, board):
+	def is_terminal_node(self, board, valid_locations):
 		# return heuristic value of node if it's a terminal node
-		return winning_move(board, self.checker) or winning_move(board, self.opponent_checker) or len(self.get_valid_locations(board)) == 0
+		
+		# return self.winning_move(board, self.checker) or self.winning_move(board, self.opponent_checker) or len(self.get_valid_locations(board)) == 0
+		# return self.winning_move(board, self.checker) or self.winning_move(board, self.opponent_checker) or self.valid_locations_exist(board) == 0
+		return self.winning_move(board, self.checker, valid_locations) or self.winning_move(board, self.opponent_checker, valid_locations) or len(valid_locations) == 0
 
 	def minimax(self, board, depth, alpha, beta, maximizingPlayer):
 		## else recursively check tree for best score
 
 		valid_locations = self.get_valid_locations(board)
-		is_terminal = self.is_terminal_node(board)
+		# print('valid_locations \n',valid_locations)
+		is_terminal = self.is_terminal_node(board, valid_locations)
+		# print('is_terminal', is_terminal)
 		if depth == 0 or is_terminal:
 			if is_terminal:
-				if winning_move(board, self.opponent_checker):
-					return (None, 100000000000000)
-				elif winning_move(board, self.checker):
-					return (None, -10000000000000)
+				if self.winning_move(board, self.opponent_checker):
+					return (valid_locations[0], 100000000000000)
+				elif self.winning_move(board, self.checker):
+					return (valid_locations[0], -10000000000000)
 				else: # Game is over, no more valid moves
-					return (None, 0)
+					return (valid_locations[0], 0)
 			else: # Depth is zero
 				# if depth is zero, find the heuristic value of the board
-				return (None, self.score_position(board, self.opponent_checker))
+				return (valid_locations[0], self.score_position(board, self.opponent_checker))
 		if maximizingPlayer:
 			value = -math.inf
-			column = random.choice(valid_locations)
-			for col in valid_locations:
-				row = self.get_next_open_row(board, col)
-				b_copy = self.deepcopy(board.slots)
-				self.drop_piece(b_copy, row, col, self.opponent_checker)
-				new_score = self.minimax(b_copy, depth-1, alpha, beta, False)[1]
+			best_move = random.choice(valid_locations)
+			for location in valid_locations:
+				row = location[0]
+				col = location[1]
+				# row = self.get_next_open_row(board, col)
+				temp_slots = copy.deepcopy(board)
+				self.drop_piece(temp_slots, row, col, self.opponent_checker)
+				new_score = self.minimax(temp_slots, depth-1, alpha, beta, False)[1]
+				# print('max -new_score', new_score)
 				if new_score > value:
 					value = new_score
-					column = col
+					best_move = location
 				alpha = max(alpha, value)
 				if alpha >= beta:
 					break
-			return column, value
+			return best_move, value
 
 		else: # Minimizing player
 			value = math.inf
-			column = random.choice(valid_locations)
-			for col in valid_locations:
-				row = self.get_next_open_row(board, col)
-				b_copy = self.deepcopy(board.slots)
-				self.drop_piece(b_copy, row, col, self.checker)
-				new_score = self.minimax(b_copy, depth-1, alpha, beta, True)[1]
+			best_move = random.choice(valid_locations)
+			for location in valid_locations:
+				row = location[0]
+				col = location[1]
+				# row = self.get_next_open_row(board, col)
+				temp_slots = copy.deepcopy(board)
+				self.drop_piece(temp_slots, row, col, self.checker)
+				new_score = self.minimax(temp_slots, depth-1, alpha, beta, True)[1]
+				# print('min -new_score', new_score)
 				if new_score < value:
 					value = new_score
-					column = col
+					best_move = location
 				beta = min(beta, value)
 				if alpha >= beta:
 					break
-			return column, value
+			return best_move, value
+
+	def winning_move(self, board, checker, valid_locations):
+		""" Checks for if the specified checker added to position x, y will 
+			lead to a win
+		"""
+		for location in valid_locations:
+			r = location[0]
+			c = location[1]
+			return self.is_horizontal_win(board, checker,r,c) \
+				or self.is_vertical_win(board, checker,r,c) \
+				or self.is_diagonal1_win(board, checker,r,c) \
+				or self.is_diagonal2_win(board, checker,r,c)
+
+	def is_horizontal_win(self, board, checker, r, c):
+		cnt = 0
+		
+		for i in range(5):
+			# Check if the next four columns in this row
+			# contain the specified checker.
+			if c+i < self.COLUMN_COUNT and board[r][c+i] == checker:
+				cnt += 1
+				# print('Hl: ' + str(cnt))
+			else:
+				break
+		
+		if cnt == 5:
+			return True
+		else:
+			# check towards left           
+			for i in range(1, 6-cnt):
+				if c-i >= 0 and board[r][c-i] == checker:
+					cnt += 1
+					# print('Hr: ' + str(cnt))
+				else:
+					break
+			   
+			if cnt == 5:
+				return True  
+			
+		return False
+						
+	def is_vertical_win(self, board, checker, r, c):
+		cnt = 0
+		for i in range(5):
+			# Check if the next four rows in this col
+			# contain the specified checker.            
+			if r+i < self.COLUMN_COUNT and board[r+i][c] == checker:
+				cnt += 1
+				# print('Vdwn: ' + str(cnt))
+			else:
+				break
+		
+		if cnt == 5:
+			return True
+		else:
+			# check upwards
+			for i in range(1, 6-cnt):
+				if r-i >= 0 and board[r-i][c] == checker:
+					cnt += 1
+					# print('Vup: ' + str(cnt))
+				else:
+					break
+			
+			if cnt == 5:
+				return True  
+			
+		return False
+
+	def is_diagonal1_win(self, board, checker, r, c):
+		cnt = 0
+		for i in range(5):
+			if r+i < self.ROW_COUNT and c+i < self.COLUMN_COUNT and \
+				board[r+i][c+i] == checker:                    
+				cnt += 1
+				# print('D1: L ' + str(cnt))
+			else:
+				break
+		if cnt == 5:
+			return True
+		else:
+			for i in range(1, 6-cnt):
+				if r-i >= 0 and c-i >= 0 and \
+					board[r-i][c-i] == checker:
+						cnt += 1
+						# print('D1: R ' + str(cnt))
+				else:
+					break
+				
+			if cnt == 5:
+				return True  
+		
+		return False    
+
+	def is_diagonal2_win(self, board, checker, r, c):
+		cnt = 0
+		for i in range(5):
+			if r-i >= 0 and c+i < self.COLUMN_COUNT and \
+				board[r-i][c+i] == checker:
+				cnt += 1
+				# print('D2: L ' + str(cnt))
+			else:
+				break
+			
+		if cnt == 5:
+			return True
+		else:
+			for i in range(1, 6-cnt):
+				if r+i < self.ROW_COUNT and c-i >= 0 and \
+					board[r+i][c-i] == checker:
+					cnt += 1
+					# print('D2: R ' + str(cnt))
+				else:
+					break
+				
+			if cnt == 5:
+				return True  
+		
+		return False 

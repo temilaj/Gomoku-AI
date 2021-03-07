@@ -1,15 +1,3 @@
-# 
-# Programming Assignment 2, CS640
-#
-# A Gomoku (Gobang) Game
-#
-# Adapted from CS111
-# By Yiwen Gu
-#
-# You need to implement an AI Player for Gomoku
-# A Random Player is provided for you
-# 
-#
 import random
 from pa2_gomoku import Player
 import copy
@@ -45,22 +33,12 @@ class AIPlayer(Player):
 		self.num_moves += 1
 		self.ROW_COUNT = board.height
 		self.COLUMN_COUNT = board.width
-		if(len(self.get_valid_locations(board.slots)) > 10):
-			next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
-		else:
-			next_move, minimax_score = self.minimax(board.slots, 3, -math.inf, math.inf, True)
+		next_move, minimax_score = self.minimax(board.slots, 2, -math.inf, math.inf, True)
 
 		print('next_move', next_move)
 
 		return next_move
-		
-		
-		################### TODO: ######################################
-		# Implement your strategy here. 
-		# Feel free to call as many as helper functions as you want.
-		# We only cares the return of this function
-		################################################################
-		
+
 	def drop_piece(self, temp_slots, row, col, piece):
 		temp_slots[row][col] = piece
 	
@@ -119,8 +97,6 @@ class AIPlayer(Player):
 		# # Score Vertical
 		for column in range(self.COLUMN_COUNT):
 			# col_array = [int(i) for i in list(board[:,c])]
-			# row_array = temp_board[row]
-			# col_array = temp_board[column]
 			col_array = list(sub[column] for sub in temp_board) 
 			for row in range(self.ROW_COUNT - WINDOW_LENGTH + 1):
 				window = col_array[row: row + WINDOW_LENGTH]
